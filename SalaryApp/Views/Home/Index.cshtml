@@ -1,0 +1,8 @@
+﻿@model EmployeeList
+
+@{
+    ViewData["Title"] = "Employees";
+}
+
+<h1>Employees</h1>
+<div id="employeeList" class="grid" data-options="@Model.GridOptions?.Serialize(Url)"></div>

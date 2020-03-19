@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>SalaryCalc@(String.IsNullOrEmpty(ViewBag.Title) ? null : " - " + ViewBag.Title)</title>
+
+    <environment include="Development">
+        <link rel="stylesheet" href="~/w2ui/w2ui.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/styles.css" asp-append-version="true" />
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.js"></script>
+        <script src="~/w2ui/w2ui.js" asp-append-version="true"></script>
+        <script src="~/scripts.js" asp-append-version="true"></script>
+    </environment>
+    <environment exclude="Development">
+        <link rel="stylesheet" href="~/w2ui/w2ui.min.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/styles.min.css" asp-append-version="true" />
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <script src="~/w2ui/w2ui.min.js" asp-append-version="true"></script>
+        <script src="~/scripts.min.js" asp-append-version="true"></script>
+    </environment>
+</head>
+<body>
+    <div>
+        @RenderBody()
+    </div>
+</body>
+</html>

@@ -98,7 +98,7 @@ AS
 BEGIN
 	IF EXISTS (SELECT * FROM deleted) AND (
 		Update(Salary)
-		OR NOT (Update(Rating) OR Update(YearsEmployed) OR Update(PrevRating1) OR Update(PrevRating2))
+		OR NOT (Update(PositionID) OR Update(Rating) OR Update(YearsEmployed) OR Update(PrevRating1) OR Update(PrevRating2))
 	)
 		RETURN
 
