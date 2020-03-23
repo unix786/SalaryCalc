@@ -1,3 +1,6 @@
+﻿IF EXISTS (SELECT * FROM Parameter)
+	RETURN
+
 INSERT Parameter (MinimumWage) VALUES (800)
 
 INSERT Bonus (Score, Value)
