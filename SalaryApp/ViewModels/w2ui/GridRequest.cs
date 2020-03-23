@@ -21,7 +21,7 @@ namespace SalaryApp.ViewModels
         [JsonProperty(PropertyName = "recid")]
         public List<int> Selected { get; set; }
 
-        public object Search { get; set; }
+        public IEnumerable<SearchItem> Search { get; set; }
         public object Sort { get; set; }
     }
 }

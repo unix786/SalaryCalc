@@ -1,3 +1,0 @@
-https://github.com/vitmalina/w2ui
-
-Using build from 2020-03-12.

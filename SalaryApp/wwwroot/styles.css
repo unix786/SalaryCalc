@@ -4,3 +4,59 @@
 .grid {
   min-height: 400px;
 }
+.overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  z-index: 100;
+}
+.overlay .window {
+  border: none;
+  margin: 20px;
+  width: 100%;
+}
+.hidden {
+  display: none;
+}
+#tb_employeeList_toolbar_item_w2ui-break0,
+#tb_employeeList_toolbar_item_w2ui-search,
+#tb_employeeList_toolbar_item_w2ui-search-advanced {
+  display: none;
+}
+form {
+  display: grid;
+  grid-template-columns: minmax(80px, min-content) minmax(200px, max-content) auto;
+  grid-gap: 5px;
+}
+form.employee-detail {
+  width: fit-content;
+  padding: 20px;
+  background: lightgray;
+}
+form > label,
+form > .label {
+  grid-column-start: 1;
+}
+form > .form-group {
+  grid-column: 1 / -1;
+}
+form input:read-only {
+  background: lightgrey;
+}
+form .buttons {
+  grid-column: 1 / 3;
+  display: flex;
+  margin: auto;
+}
+form .buttons * {
+  min-width: 100px;
+  margin: 0 5px;
+}
+form .error {
+  grid-column: 1 / -1;
+  color: palevioletred;
+}

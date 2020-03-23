@@ -26,7 +26,7 @@ CREATE TABLE Employee
 	ID Identity_t IDENTITY PRIMARY KEY,
 	Name Name_t,
 	Employed Year_t NOT NULL,
-	PositionID Identity_t REFERENCES Position (ID),
+	PositionID Identity_t NOT NULL REFERENCES Position (ID),
 	ManagerID Identity_t NULL REFERENCES Employee (ID),
 	Rating tinyint NOT NULL DEFAULT 0, -- The last rating. Indirectly related to Bonus(Score). See Salary view.
 	YearsEmployed tinyint NOT NULL DEFAULT 0, -- Relative year of the last rating.

@@ -3802,6 +3802,8 @@ w2utils.event = {
         menu              : [],
         method            : null,       // if defined, then overwrited ajax method
         dataType          : null,       // if defined, then overwrited w2utils.settings.dataType
+        /**Will be appended to save and delete requests. Must be an object { name, value }. Right now works only with dataType 'HTTPJSON'*/
+        antiForgeryToken  : null,
         parser            : null,
 
         // these column properties will be saved in stateSave()
@@ -5941,12 +5943,11 @@ w2utils.event = {
                 }
             }
             // event before
-            if (cmd == 'get') {
-                var edata = this.trigger({ phase: 'before', type: 'request', target: this.name, url: url, postData: params, httpHeaders: this.httpHeaders });
-                if (edata.isCancelled === true) { if (typeof callBack == 'function') callBack({ status: 'error', message: 'Request aborted.' }); return; }
-            } else {
-                var edata = { url: url, postData: params, httpHeaders: this.httpHeaders };
-            }
+            var edata = { phase: 'before', type: 'request', target: this.name, url: url, postData: params, httpHeaders: this.httpHeaders };
+            if (cmd == 'save') edata.type = 'saveRequest';
+            else if (cmd == 'delete') edata.type = 'deleteRequest';
+            this.trigger(edata);
+            if (edata.isCancelled === true) { if (typeof callBack == 'function') callBack({ status: 'error', message: 'Request aborted.' }); return; }
             // call server to get data
             var obj = this;
             if (this.last.xhr_offset === 0) {
@@ -5990,6 +5991,7 @@ w2utils.event = {
                     break;
                 case 'HTTPJSON':
                     ajaxOptions.data = { request: JSON.stringify(ajaxOptions.data) };
+                    if (this.antiForgeryToken) ajaxOptions.data = jQuery.extend(ajaxOptions.data, this.antiForgeryToken);
                     break;
                 case 'RESTFULL':
                     ajaxOptions.type = 'GET';

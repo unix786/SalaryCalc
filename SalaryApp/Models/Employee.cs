@@ -17,8 +17,8 @@ namespace SalaryApp.Models
         [StringLength(250)]
         public string Name { get; set; }
         public short Employed { get; set; }
-        [Column("PositionID")]
-        public int? PositionId { get; set; }
+        [Required, Column("PositionID")]
+        public int PositionId { get; set; }
         [Column("ManagerID")]
         public int? ManagerId { get; set; }
         public byte Rating { get; set; }

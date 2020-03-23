@@ -1,0 +1,46 @@
+﻿@model EmployeeDetail
+<form asp-action="Save" class="employee-detail">
+    <div asp-validation-summary="ModelOnly" class="text-danger">@Model.Error</div>
+    <input type="hidden" asp-for="ID" />
+    <label asp-for="Name"></label>
+    <input asp-for="Name" />
+    <span asp-validation-for="Name" class="text-danger"></span>
+    <label asp-for="Position"></label>
+    <select asp-for="Position" asp-items="Model.Positions"></select>
+    <span asp-validation-for="Position" class="text-danger"></span>
+    <label asp-for="Employed"></label>
+    <input asp-for="Employed" />
+    <span asp-validation-for="Employed" class="text-danger"></span>
+    <label asp-for="YearsEmployed"></label>
+    <input asp-for="YearsEmployed" readonly="@true" />
+    <label asp-for="Manager"></label>
+    <input asp-for="Manager" readonly="@true" />
+    <div class="label">
+        <label asp-for="Rating"></label>
+        <span>(0-5)</span>
+    </div>
+    <input asp-for="Rating" />
+    <span asp-validation-for="Rating" class="text-danger"></span>
+    <input type="hidden" asp-for="RatingYear" />
+    @if (!Model.IsNew)
+    {
+        <label>Rating for @Model.PrevRating1Year</label>
+        <input asp-for="PrevRating1" readonly="@true" />
+        <label>Rating for @Model.PrevRating2Year</label>
+        <input asp-for="PrevRating2" readonly="@true" />
+        @if (Model.PrevRating3.HasValue)
+        {
+            <label>Rating for @Model.PrevRating3Year</label>
+            <input asp-for="PrevRating3" readonly="@true" />
+        }
+        <label asp-for="Salary"></label>
+        <input asp-for="Salary" readonly="@true" />
+    }
+    <div class="buttons">
+        <input type="submit" value="@(Model.IsNew ? "Create" : "Save")" class="btn btn-primary" />
+        <button type="button" class="cancel hidden">Close</button>
+    </div>
+    <label class="error">@Model.Error</label>
+</form>
+@*Client-side validation does not work with numbers.
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}*@

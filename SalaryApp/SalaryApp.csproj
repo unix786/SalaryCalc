@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\w2ui\" />
+    <Folder Include="wwwroot\lib\w2ui\" />
   </ItemGroup>
 
 </Project>

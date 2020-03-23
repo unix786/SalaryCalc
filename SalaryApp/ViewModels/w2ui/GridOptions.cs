@@ -12,8 +12,6 @@ namespace SalaryApp.ViewModels
     {
         public IEnumerable<GridColumn> Columns { get; set; } = Array.Empty<GridColumn>();
 
-        public string ControllerName { get; set; }
-
         /// <summary>
         /// By default the grid uses this field as an identifier.
         /// </summary>
@@ -31,6 +29,8 @@ namespace SalaryApp.ViewModels
             Formatting = Formatting.None,
         };
 
+        public object show { get; set; }
+
         public string Serialize(IUrlHelper url) => JsonConvert.SerializeObject(
             new
             {
@@ -38,10 +38,11 @@ namespace SalaryApp.ViewModels
                 recid = IDField,
                 url = new
                 {
-                    get = url.Action("GridGet", ControllerName),
-                    save = url.Action("GridSave", ControllerName),
-                    remove = url.Action("GridDelete", ControllerName),
-                }
+                    get = url.Action("GridGet"),
+                    save = url.Action("GridSave"),
+                    remove = url.Action("GridDelete"),
+                },
+                show
             },
             serializerSettings);
     }
