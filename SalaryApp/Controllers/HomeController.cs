@@ -14,7 +14,7 @@ namespace SalaryApp.Controllers
     public class HomeController : Controller
     {
         private readonly MSSqlLocalDBContext dbContext;
-        private readonly ITime time;
+        private ITime time;
 
         public HomeController(MSSqlLocalDBContext dbContext, ITime time)
         {
@@ -173,6 +173,8 @@ namespace SalaryApp.Controllers
                 var count = query.CountAsync();
 
                 IEnumerable<Employee> records = await query
+                    .OrderByDescending(e => e.Employed + e.YearsEmployed)
+                    .OrderByDescending(e => e.Employed)
                     .Skip(request.Offset).Take(request.Limit)
                     .Include(e => e.Position)
                     .ToListAsync();
@@ -245,9 +247,9 @@ namespace SalaryApp.Controllers
         private int GetCurrentYear() => time.Now.Year;
         private const int ratingYearOffset = EmployeeDetail.RatingYearOffset;
 
-        private EmployeeDetail GetEmployeeViewModel(Employee data) => GetEmployeeViewModel(data, GetCurrentYear());
+        private EmployeeDetail GetEmployeeViewModel(Employee data) => GetEmployeeViewModel(dbContext, data, GetCurrentYear());
 
-        internal static EmployeeDetail GetEmployeeViewModel(Employee data, int currentYear)
+        internal static EmployeeDetail GetEmployeeViewModel(MSSqlLocalDBContext db, Employee data, int currentYear)
         {
             int dataYear = data.Employed + data.YearsEmployed;
             int dataRatingYear = dataYear + ratingYearOffset;
@@ -259,7 +261,7 @@ namespace SalaryApp.Controllers
                 Employed = data.Employed,
                 Position = data.PositionId,
                 Salary = data.Salary,
-                Manager = data.Manager?.Name,
+                Manager = (data.Manager ?? db.Employee.Find(data.ManagerId))?.Name,
 
                 Rating = RatingToFloat(data.Rating),
                 CurrentYear = currentYear,
@@ -283,6 +285,8 @@ namespace SalaryApp.Controllers
             return view;
         }
 
+        private EmployeeDetail GetNewEmployeeViewModel() => GetNewEmployeeViewModel(GetCurrentYear());
+
         internal static EmployeeDetail GetNewEmployeeViewModel(int year)
         {
             return new EmployeeDetail
@@ -304,7 +308,7 @@ namespace SalaryApp.Controllers
             }
             else
             {
-                model = GetNewEmployeeViewModel(GetCurrentYear());
+                model = GetNewEmployeeViewModel();
             }
 
             SetSelectLists(model);
@@ -316,26 +320,38 @@ namespace SalaryApp.Controllers
             dataModel.Name = viewModel.Name;
             dataModel.PositionId = viewModel.Position;
 
-            int dataCurrentYear = dataModel.Employed + dataModel.YearsEmployed;
-            dataModel.Employed = (short)viewModel.Employed;
-
-            if (viewModel.Rating.HasValue)
+            if (viewModel.IsNew)
             {
                 dataModel.Rating = (byte)RatingToInt(viewModel.Rating.Value);
+                dataModel.Employed = (short)viewModel.Employed;
                 dataModel.YearsEmployed = (byte)viewModel.YearsEmployed;
-
-                if (dataCurrentYear < viewModel.CurrentYear)
-                {
-                    // The rating is being entered for the next year (may also have skipped some years).
-                    dataModel.PrevRating2 = viewModel.CurrentYear - dataCurrentYear == 1 ?
-                        dataModel.PrevRating1
-                        : dataModel.Rating;
-                    dataModel.PrevRating1 = dataModel.Rating;
-                }
+                if (dataModel.YearsEmployed > 1) dataModel.PrevRating1 = dataModel.Rating;
+                if (dataModel.YearsEmployed > 2) dataModel.PrevRating2 = dataModel.Rating;
             }
             else
             {
-                dataModel.YearsEmployed = (byte)(dataCurrentYear - dataModel.Employed);
+                int dataCurrentYear = dataModel.Employed + dataModel.YearsEmployed;
+                dataModel.Employed = (short)viewModel.Employed;
+
+                if (viewModel.Rating.HasValue)
+                {
+                    if (dataCurrentYear < viewModel.CurrentYear)
+                    {
+                        // The rating is being entered for the next year (may also have skipped some years).
+                        dataModel.PrevRating2 = viewModel.CurrentYear - dataCurrentYear == 1 ?
+                            dataModel.PrevRating1
+                            : dataModel.Rating;
+                        dataModel.PrevRating1 = dataModel.Rating;
+                    }
+
+                    dataModel.Rating = (byte)RatingToInt(viewModel.Rating.Value);
+                    dataModel.YearsEmployed = (byte)viewModel.YearsEmployed;
+                }
+                else
+                {
+                    // Updating "years worked" in case "year employed" was changed.
+                    dataModel.YearsEmployed = (byte)(dataCurrentYear - dataModel.Employed);
+                }
             }
         }
 
@@ -358,14 +374,7 @@ namespace SalaryApp.Controllers
                     if (viewModel.IsNew)
                     {
                         dataModel = new Employee();
-
-                        dataModel.Name = viewModel.Name;
-                        dataModel.PositionId = viewModel.Position;
-                        dataModel.Rating = (byte)RatingToInt(viewModel.Rating.Value);
-                        dataModel.Employed = (short)viewModel.Employed;
-                        dataModel.YearsEmployed = (byte)viewModel.YearsEmployed;
-                        if (dataModel.YearsEmployed > 0) dataModel.PrevRating1 = dataModel.Rating;
-                        if (dataModel.YearsEmployed > 1) dataModel.PrevRating2 = dataModel.Rating;
+                        UpdateEmployeeFromView(dataModel, viewModel);
                     }
                     else
                     {
@@ -395,5 +404,109 @@ namespace SalaryApp.Controllers
             model.Positions = new SelectList(dbContext.Position, nameof(Position.Id), nameof(Position.Name), model.Position);
         }
         #endregion
+
+        [HttpPost]
+        public void AddTestData()
+        {
+            var prevTime = time;
+            try
+            {
+                var time = new OffsetSystemTimeService();
+                this.time = time;
+                //dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
+
+                var positionId = dbContext.Position.First().Id;
+                var rand = new Random(0);
+                var workers = new List<Employee>();
+                var seniors = new List<Employee>();
+                var juniors = new List<Employee>();
+                var advanceYears = new[] { 5, 8, 20, 50, 150, 190 };
+                double leaveRate = 0.15;
+                time.AddYears(-advanceYears.Length);
+
+                const int maxRating = 50;
+
+                EmployeeDetail viewModel;
+                Employee employee;
+                for (int i = 0; i < 200; i++)
+                {
+                    viewModel = GetNewEmployeeViewModel();
+                    viewModel.Name = $"Employee {(i + 1).ToString("0000")}";
+                    viewModel.Position = positionId;
+
+                    employee = new Employee();
+                    workers.Add(employee);
+                    juniors.Add(employee);
+                    UpdateEmployeeFromView(employee, viewModel);
+                    dbContext.Employee.Add(employee);
+
+                    if (seniors.Count > 0) employee.Manager = seniors[rand.Next(seniors.Count)];
+
+                    if (juniors.Count >= Math.Max(3, seniors.Count * 5))
+                    {
+                        //dbContext.ChangeTracker.DetectChanges();
+                        seniors = juniors;
+                        juniors = new List<Employee>();
+                    }
+
+                    if (advanceYears.Contains(i))
+                    {
+                        time.AddYears(1);
+                        for (int j = workers.Count - 1; j >= 0; j--)
+                        {
+                            var item = workers[j];
+                            if (rand.NextDouble() < leaveRate)
+                            {
+                                item.Name += " (unemployed)";
+                                workers.RemoveAt(j);
+                                if (seniors.Remove(item))
+                                {
+                                    var unmanagedJuniors = juniors.Where(x => x.Manager == item).ToList();
+                                    if (seniors.Count == 0 && unmanagedJuniors.Count > 1)
+                                    {
+                                        var manager = unmanagedJuniors[0];
+                                        //dbContext.ChangeTracker.DetectChanges();
+                                        seniors.Add(manager);
+                                        juniors.Remove(manager);
+                                        foreach (var unmanaged in unmanagedJuniors) unmanaged.Manager = manager;
+                                    }
+                                    else
+                                    {
+                                        foreach (var unmanaged in unmanagedJuniors)
+                                            unmanaged.Manager = seniors[rand.Next(seniors.Count)];
+                                    }
+                                }
+                                juniors.Remove(item);
+                                continue;
+                            }
+
+                            var itemView = GetEmployeeViewModel(item);
+                            if (item.Manager == null)
+                            {
+                                itemView.Rating = RatingToFloat(maxRating);
+                            }
+                            else if (itemView.PrevRating1 == 0)
+                            {
+                                itemView.Rating = RatingToFloat(rand.Next(0, maxRating));
+                            }
+                            else
+                            {
+                                itemView.Rating = RatingToFloat(rand.Next(
+                                    Math.Max(0, RatingToInt(itemView.PrevRating1) - 15),
+                                    Math.Min(maxRating, RatingToInt(itemView.PrevRating1) + 15)
+                                    ));
+                            }
+                            UpdateEmployeeFromView(item, itemView);
+                        }
+                    }
+                }
+                dbContext.SaveChanges();
+            }
+            finally
+            {
+                time = prevTime;
+                dbContext.ChangeTracker.AutoDetectChangesEnabled = true;
+            }
+        }
     }
 }

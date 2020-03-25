@@ -13,5 +13,6 @@ namespace SalaryApp.Services
         public override DateTime Now => base.Now.AddYears(offset);
 
         public void SetYear(int year) => offset = year - base.Now.Year;
+        public void AddYears(int years) => offset += years;
     }
 }

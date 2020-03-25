@@ -44,9 +44,10 @@
         overlay.appendTo('body');
         var frame = overlay.find('iframe');
         var frameElement = frame[0];
+        var needReload = false;
         var closeOverlay = function () {
             overlay.remove();
-            grid.reload();
+            if (needReload) grid.reload();
         };
         overlay.on('click', closeOverlay);
         frame.on('load ', () => {
@@ -58,7 +59,33 @@
             var btnCancel = jQuery(frameDocument).find('button.cancel');
             btnCancel.on('click', closeOverlay);
             btnCancel.show();
+            jQuery(frameDocument).find('input[type=submit]').on('click', () => needReload = true);
             jQuery(frameElement).show();
         });
+    }
+
+    {
+        var employeeGrid = w2ui['employeeList'];
+        if (employeeGrid) {
+            employeeGrid.toolbar.add(
+                {
+                    type: 'button',
+                    id: 'testButton',
+                    caption: 'Add test data',
+                    onClick: function (event) {
+                        w2confirm(event.item.text + '?').yes(() => {
+                            employeeGrid.lock('', true);
+                            jQuery.ajax({
+                                method: 'POST',
+                                url: '/Home/AddTestData',
+                                complete: () => {
+                                    employeeGrid.unlock();
+                                    employeeGrid.reload();
+                                },
+                            });
+                        });
+                    },
+                });
+        }
     }
 });
