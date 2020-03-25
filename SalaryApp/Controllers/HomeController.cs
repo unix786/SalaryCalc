@@ -2,10 +2,10 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SalaryApp.Models;
+using SalaryApp.Services;
 using SalaryApp.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -14,10 +14,12 @@ namespace SalaryApp.Controllers
     public class HomeController : Controller
     {
         private readonly MSSqlLocalDBContext dbContext;
+        private readonly ITime time;
 
-        public HomeController(MSSqlLocalDBContext dbContext)
+        public HomeController(MSSqlLocalDBContext dbContext, ITime time)
         {
             this.dbContext = dbContext;
+            this.time = time ?? new SystemTimeService();
         }
 
         #region Grid
@@ -110,7 +112,7 @@ namespace SalaryApp.Controllers
                 [Columns.Name.field] = e.Name,
                 [Columns.Employed.field] = e.Employed,
                 [Columns.Rating.field] = RatingToFloat(e.Rating),
-                [Columns.RatingYear.field] = e.Employed + e.YearsEmployed,
+                [Columns.RatingYear.field] = e.Employed + e.YearsEmployed + EmployeeDetail.RatingYearOffset,
                 [Columns.Salary.field] = e.Salary,
             };
             if (e.Position != null)
@@ -199,7 +201,7 @@ namespace SalaryApp.Controllers
                     var employee = dbContext.Employee.Find(id);
                     if (employee != null)
                     {
-                        var viewModel = GetEmployeeViewModel(dbContext, employee);
+                        var viewModel = GetEmployeeViewModel(employee);
                         if (change.TryGetValue(Columns.Name.field, out object name)) viewModel.Name = name.ToString();
                         if (change.TryGetValue(Columns.Employed.field, out object employed)) viewModel.Employed = Convert.ToInt16(employed);
                         if (change.TryGetValue(Columns.Rating.field, out object rating)) viewModel.Rating = Convert.ToSingle(rating);
@@ -240,10 +242,15 @@ namespace SalaryApp.Controllers
         private static float RatingToFloat(int rating) => rating / 10f;
         private static int RatingToInt(float rating) => (int)Math.Round(rating * 10, 0);
 
-        internal static EmployeeDetail GetEmployeeViewModel(MSSqlLocalDBContext db, Employee employee)
+        private int GetCurrentYear() => time.Now.Year;
+        private const int ratingYearOffset = EmployeeDetail.RatingYearOffset;
+
+        private EmployeeDetail GetEmployeeViewModel(Employee data) => GetEmployeeViewModel(data, GetCurrentYear());
+
+        internal static EmployeeDetail GetEmployeeViewModel(Employee employee, int year)
         {
-            int year = DateTime.Now.Year;
-            int ratingYear = employee.Employed + employee.YearsEmployed;
+            int dataYear = employee.Employed + employee.YearsEmployed;
+            int ratingYear = dataYear + ratingYearOffset;
 
             var model = new EmployeeDetail
             {
@@ -255,14 +262,14 @@ namespace SalaryApp.Controllers
                 Manager = employee.Manager?.Name,
 
                 Rating = RatingToFloat(employee.Rating),
-                RatingYear = year,
+                CurrentYear = year,
                 PrevRating1 = RatingToFloat(employee.PrevRating1),
                 PrevRating1Year = ratingYear - 1,
                 PrevRating2 = RatingToFloat(employee.PrevRating2),
                 PrevRating2Year = ratingYear - 2,
             };
 
-            if (year != ratingYear)
+            if (year != dataYear)
             {
                 model.PrevRating3 = model.PrevRating2;
                 model.PrevRating3Year = model.PrevRating2Year;
@@ -276,13 +283,12 @@ namespace SalaryApp.Controllers
             return model;
         }
 
-        internal static EmployeeDetail GetNewEmployeeViewModel()
+        internal static EmployeeDetail GetNewEmployeeViewModel(int year)
         {
-            int year = DateTime.Now.Year;
             return new EmployeeDetail
             {
                 Employed = year,
-                RatingYear = year,
+                RatingYear = year + ratingYearOffset,
                 Rating = 0,
             };
         }
@@ -294,11 +300,11 @@ namespace SalaryApp.Controllers
             {
                 var employee = await dbContext.Employee.FindAsync(id);
                 if (employee == null) return NotFound(id);
-                model = GetEmployeeViewModel(dbContext, employee);
+                model = GetEmployeeViewModel(employee);
             }
             else
             {
-                model = GetNewEmployeeViewModel();
+                model = GetNewEmployeeViewModel(GetCurrentYear());
             }
 
             SetSelectLists(model);
@@ -310,7 +316,7 @@ namespace SalaryApp.Controllers
             dataModel.Name = viewModel.Name;
             dataModel.PositionId = viewModel.Position;
 
-            int dataRatingYear = dataModel.Employed + dataModel.YearsEmployed;
+            int dataCurrentYear = dataModel.Employed + dataModel.YearsEmployed;
             dataModel.Employed = (short)viewModel.Employed;
 
             if (viewModel.Rating.HasValue)
@@ -318,10 +324,10 @@ namespace SalaryApp.Controllers
                 dataModel.Rating = (byte)RatingToInt(viewModel.Rating.Value);
                 dataModel.YearsEmployed = (byte)viewModel.YearsEmployed;
 
-                if (dataRatingYear < viewModel.RatingYear)
+                if (dataCurrentYear < viewModel.CurrentYear)
                 {
                     // The rating is being entered for the next year (may also have skipped some years).
-                    dataModel.PrevRating2 = viewModel.RatingYear - dataRatingYear == 1 ?
+                    dataModel.PrevRating2 = viewModel.CurrentYear - dataCurrentYear == 1 ?
                         dataModel.PrevRating1
                         : dataModel.Rating;
                     dataModel.PrevRating1 = dataModel.Rating;
@@ -329,7 +335,7 @@ namespace SalaryApp.Controllers
             }
             else
             {
-                dataModel.YearsEmployed = (byte)(dataRatingYear - dataModel.Employed);
+                dataModel.YearsEmployed = (byte)(dataCurrentYear - dataModel.Employed);
             }
         }
 
@@ -340,8 +346,9 @@ namespace SalaryApp.Controllers
             {
                 try
                 {
-                    int currentYear = DateTime.Now.Year;
-                    if (viewModel.Rating.HasValue && !(viewModel.RatingYear == currentYear || viewModel.RatingYear + 1 == currentYear))
+                    int currentYear = GetCurrentYear();
+                    // Not allowing to enter ratings for the past
+                    if (viewModel.Rating.HasValue && !(viewModel.CurrentYear == currentYear || viewModel.CurrentYear + 1 == currentYear))
                         return BadRequest();
 
                     if (viewModel.YearsEmployed < 0) // This still allows entering future dates.

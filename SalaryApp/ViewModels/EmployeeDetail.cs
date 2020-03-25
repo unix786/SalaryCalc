@@ -27,8 +27,18 @@ namespace SalaryApp.ViewModels
 
         public int RatingYear { get; set; }
 
+        /// <summary>Assuming that <see cref="Rating"/> is for the year before now.</summary>
+        internal const int RatingYearOffset = -1;
+
+        /// <summary><see cref="RatingYear"/> without <see cref="RatingYearOffset"/>.</summary>
+        internal int CurrentYear
+        {
+            get => RatingYear - RatingYearOffset;
+            set => RatingYear = value + RatingYearOffset;
+        }
+
         [DisplayName("Years worked")]
-        public int YearsEmployed { get => RatingYear - Employed; }
+        public int YearsEmployed { get => CurrentYear - Employed; }
 
         [Range(0, 5)]
         public float? Rating { get; set; }
