@@ -247,40 +247,40 @@ namespace SalaryApp.Controllers
 
         private EmployeeDetail GetEmployeeViewModel(Employee data) => GetEmployeeViewModel(data, GetCurrentYear());
 
-        internal static EmployeeDetail GetEmployeeViewModel(Employee employee, int year)
+        internal static EmployeeDetail GetEmployeeViewModel(Employee data, int currentYear)
         {
-            int dataYear = employee.Employed + employee.YearsEmployed;
-            int ratingYear = dataYear + ratingYearOffset;
+            int dataYear = data.Employed + data.YearsEmployed;
+            int dataRatingYear = dataYear + ratingYearOffset;
 
-            var model = new EmployeeDetail
+            var view = new EmployeeDetail
             {
-                ID = employee.Id,
-                Name = employee.Name,
-                Employed = employee.Employed,
-                Position = employee.PositionId,
-                Salary = employee.Salary,
-                Manager = employee.Manager?.Name,
+                ID = data.Id,
+                Name = data.Name,
+                Employed = data.Employed,
+                Position = data.PositionId,
+                Salary = data.Salary,
+                Manager = data.Manager?.Name,
 
-                Rating = RatingToFloat(employee.Rating),
-                CurrentYear = year,
-                PrevRating1 = RatingToFloat(employee.PrevRating1),
-                PrevRating1Year = ratingYear - 1,
-                PrevRating2 = RatingToFloat(employee.PrevRating2),
-                PrevRating2Year = ratingYear - 2,
+                Rating = RatingToFloat(data.Rating),
+                CurrentYear = currentYear,
+                PrevRating1 = RatingToFloat(data.PrevRating1),
+                PrevRating1Year = dataRatingYear - 1,
+                PrevRating2 = RatingToFloat(data.PrevRating2),
+                PrevRating2Year = dataRatingYear - 2,
             };
 
-            if (year != dataYear)
+            if (currentYear != dataYear)
             {
-                model.PrevRating3 = model.PrevRating2;
-                model.PrevRating3Year = model.PrevRating2Year;
-                model.PrevRating2 = model.PrevRating1;
-                model.PrevRating2Year = model.PrevRating1Year;
-                model.PrevRating1 = model.Rating.Value;
-                model.PrevRating1Year = ratingYear;
-                model.Rating = null;
+                view.PrevRating3 = view.PrevRating2;
+                view.PrevRating3Year = view.PrevRating2Year;
+                view.PrevRating2 = view.PrevRating1;
+                view.PrevRating2Year = view.PrevRating1Year;
+                view.PrevRating1 = view.Rating.Value;
+                view.PrevRating1Year = dataRatingYear;
+                view.Rating = null;
             }
 
-            return model;
+            return view;
         }
 
         internal static EmployeeDetail GetNewEmployeeViewModel(int year)
