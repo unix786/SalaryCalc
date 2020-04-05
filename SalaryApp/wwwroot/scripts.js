@@ -1,4 +1,4 @@
-﻿jQuery(() => {
+jQuery(() => {
     var grids = jQuery('.grid');
     var commonGridOptions = {
         // http://w2ui.com/web/docs/1.5/w2grid.show
