@@ -4,3 +4,4 @@ obj
 *.user
 */wwwroot/dist
 /TestResults
+node_modules

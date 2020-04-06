@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "name": "asp.net",
+  "private": true,
+  "devDependencies": {
+    "gulp": "3.9.1",
+    "gulp-less": "4.0.1",
+    "gulp-crass-minifier": "1.0.0",
+    "gulp-rename": "2.0.0",
+    "del": "5.1.0",
+    "terser": "4.6.10",
+    "gulp-minify": "3.1.0"
+  }
+}
