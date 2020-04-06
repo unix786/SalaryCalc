@@ -3,5 +3,6 @@ obj
 .vs
 *.user
 */wwwroot/dist
+*/wwwroot/lib
 /TestResults
 node_modules

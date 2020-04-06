@@ -42,5 +42,5 @@
     </div>
     <label class="error">@Model.Error</label>
 </form>
-@*Client-side validation does not work with numbers.
+@*Client-side validation does not work with fractional numbers (tried v1.19.1 and unobtrusive v3.2.11).
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}*@
